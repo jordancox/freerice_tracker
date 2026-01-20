@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freerice Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+
+        .status-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid #ccc;
+        }
+
+        .status-card.green { border-left-color: #27ae60; }
+        .status-card.yellow { border-left-color: #f39c12; }
+        .status-card.red { border-left-color: #e74c3c; }
+
+        .big-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+
+        .sub-number {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .summary-item h3 {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .summary-item p {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .form-section h3 {
+            margin-bottom: 15px;
+            color: #34495e;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .inline-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .inline-form input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .inline-form input[type="date"],
+        .inline-form input[type="number"] {
+            flex: 0 0 150px;
+        }
+
+        .inline-form input[type="text"] {
+            flex: 1 1 200px;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-small {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            text-transform: uppercase;
+            font-size: 0.85em;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .helper-text {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Freerice Donation Tracker</h1>
+
+        <div id="status-card" class="status-card">
+            <h2>Current Rice Surplus</h2>
+            <div class="big-number" id="surplus-grains">0</div>
+            <div class="sub-number" id="surplus-usd">$0.00 USD</div>
+        </div>
+
+        <div class="summary">
+            <div class="summary-item">
+                <h3>Total Consumed</h3>
+                <p id="total-consumed">0</p>
+            </div>
+            <div class="summary-item">
+                <h3>Total Donated</h3>
+                <p id="total-donated-grains">0</p>
+                <p style="font-size: 1em; color: #7f8c8d;" id="total-donated-usd">$0.00</p>
+            </div>
+            <div class="summary-item">
+                <h3>Estimated Depletion</h3>
+                <p id="days-until-depletion">N/A</p>
+                <p style="font-size: 1em; color: #7f8c8d;" id="depletion-date"></p>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Import Rice Data</h3>
+            <p class="helper-text">Go to <a href="https://engine.freerice.com/stats/rice/daily.html" target="_blank">https://engine.freerice.com/stats/rice/daily.html</a>, view page source (Cmd+U), copy everything, and paste below:</p>
+            <textarea id="html-input" placeholder="Paste the entire HTML here..."></textarea>
+            <button class="btn" onclick="importData()" style="margin-top: 10px;">Import Data</button>
+        </div>
+
+        <div class="form-section">
+            <h3>Add Donation</h3>
+            <div class="inline-form">
+                <input type="date" id="donation-date" required>
+                <input type="number" step="0.01" id="donation-amount" placeholder="USD Amount" required>
+                <input type="text" id="donation-donor" placeholder="Donor Name">
+                <input type="text" id="donation-notes" placeholder="Notes">
+                <button class="btn" onclick="addDonation()">Add</button>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Donations</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount (USD)</th>
+                        <th>Grains</th>
+                        <th>Donor</th>
+                        <th>Notes</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="donations-table"></tbody>
+            </table>
+        </div>
+
+        <div class="form-section">
+            <h3>Rice Price per Grain</h3>
+            <div class="inline-form">
+                <input type="number" step="0.0000000001" id="rice-price" placeholder="Price per grain (USD)" value="0.0000071042" required>
+                <button class="btn" onclick="updateRicePrice()">Update</button>
+            </div>
+            <p class="helper-text">Current: $<span id="current-price">0.0000071042</span> per grain</p>
+        </div>
+
+        <div class="form-section">
+            <h3>Recent Daily Consumption (Last 30 Days)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Grains</th>
+                    </tr>
+                </thead>
+                <tbody id="consumption-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data from localStorage
+        let dailyData = JSON.parse(localStorage.getItem('dailyData') || '{}');
+        let donations = JSON.parse(localStorage.getItem('donations') || '[]');
+        let ricePrice = parseFloat(localStorage.getItem('ricePrice') || '0.0000071042');
+        const startingSurplus = 7238896492; // Jan 1, 2024
+
+        function save() {
+            localStorage.setItem('dailyData', JSON.stringify(dailyData));
+            localStorage.setItem('donations', JSON.stringify(donations));
+            localStorage.setItem('ricePrice', ricePrice.toString());
+        }
+
+        function importData() {
+            const html = document.getElementById('html-input').value;
+            if (!html) {
+                alert('Please paste HTML content');
+                return;
+            }
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const table = doc.querySelector('table');
+
+            if (!table) {
+                alert('No table found in HTML');
+                return;
+            }
+
+            const rows = table.querySelectorAll('tr');
+            let imported = 0;
+
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].querySelectorAll('td');
+                if (cols.length >= 2) {
+                    const date = cols[0].textContent.trim();
+                    const grains = parseInt(cols[1].textContent.trim());
+
+                    if (date && !isNaN(grains)) {
+                        dailyData[date] = grains;
+                        imported++;
+                    }
+                }
+            }
+
+            save();
+            render();
+            document.getElementById('html-input').value = '';
+            alert(`Imported ${imported} days of data`);
+        }
+
+        function addDonation() {
+            const date = document.getElementById('donation-date').value;
+            const amount = parseFloat(document.getElementById('donation-amount').value);
+            const donor = document.getElementById('donation-donor').value;
+            const notes = document.getElementById('donation-notes').value;
+
+            if (!date || !amount) {
+                alert('Please fill in date and amount');
+                return;
+            }
+
+            donations.push({ date, amount, donor, notes });
+            donations.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            save();
+            render();
+
+            document.getElementById('donation-date').value = '';
+            document.getElementById('donation-amount').value = '';
+            document.getElementById('donation-donor').value = '';
+            document.getElementById('donation-notes').value = '';
+        }
+
+        function deleteDonation(index) {
+            if (confirm('Delete this donation?')) {
+                donations.splice(index, 1);
+                save();
+                render();
+            }
+        }
+
+        function updateRicePrice() {
+            const price = parseFloat(document.getElementById('rice-price').value);
+            if (isNaN(price) || price <= 0) {
+                alert('Please enter a valid price');
+                return;
+            }
+            ricePrice = price;
+            save();
+            render();
+        }
+
+        function calculateSurplus() {
+            const totalConsumed = Object.values(dailyData).reduce((sum, grains) => sum + grains, 0);
+            const totalDonatedUsd = donations.reduce((sum, d) => sum + d.amount, 0);
+            const totalDonatedGrains = totalDonatedUsd / ricePrice;
+            const surplus = startingSurplus + totalDonatedGrains - totalConsumed;
+
+            return { surplus, totalConsumed, totalDonatedGrains, totalDonatedUsd };
+        }
+
+        function render() {
+            const { surplus, totalConsumed, totalDonatedGrains, totalDonatedUsd } = calculateSurplus();
+
+            // Update status card
+            const statusCard = document.getElementById('status-card');
+            statusCard.className = 'status-card';
+            if (surplus > 1000000000) statusCard.classList.add('green');
+            else if (surplus > 500000000) statusCard.classList.add('yellow');
+            else statusCard.classList.add('red');
+
+            document.getElementById('surplus-grains').textContent = surplus.toLocaleString('en-US', {maximumFractionDigits: 0}) + ' grains';
+            document.getElementById('surplus-usd').textContent = '$' + (surplus * ricePrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' USD';
+
+            // Update summary
+            document.getElementById('total-consumed').textContent = totalConsumed.toLocaleString('en-US', {maximumFractionDigits: 0}) + ' grains';
+            document.getElementById('total-donated-grains').textContent = totalDonatedGrains.toLocaleString('en-US', {maximumFractionDigits: 0}) + ' grains';
+            document.getElementById('total-donated-usd').textContent = '$' + totalDonatedUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            // Calculate depletion
+            const sortedDates = Object.keys(dailyData).sort().slice(-30);
+            const last30Days = sortedDates.map(date => dailyData[date]);
+            if (last30Days.length > 0) {
+                const avgDaily = last30Days.reduce((sum, g) => sum + g, 0) / last30Days.length;
+                if (avgDaily > 0 && surplus > 0) {
+                    const daysLeft = Math.floor(surplus / avgDaily);
+                    const depletionDate = new Date();
+                    depletionDate.setDate(depletionDate.getDate() + daysLeft);
+                    document.getElementById('days-until-depletion').textContent = daysLeft + ' days';
+                    document.getElementById('depletion-date').textContent = depletionDate.toISOString().split('T')[0];
+                } else {
+                    document.getElementById('days-until-depletion').textContent = 'N/A';
+                    document.getElementById('depletion-date').textContent = '';
+                }
+            }
+
+            // Update donations table
+            const donationsTable = document.getElementById('donations-table');
+            donationsTable.innerHTML = donations.map((d, i) => `
+                <tr>
+                    <td>${d.date}</td>
+                    <td>$${d.amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td>${(d.amount / ricePrice).toLocaleString('en-US', {maximumFractionDigits: 0})}</td>
+                    <td>${d.donor || ''}</td>
+                    <td>${d.notes || ''}</td>
+                    <td><button class="btn-small" onclick="deleteDonation(${i})">Delete</button></td>
+                </tr>
+            `).join('');
+
+            // Update consumption table (last 30 days)
+            const consumptionTable = document.getElementById('consumption-table');
+            consumptionTable.innerHTML = sortedDates.reverse().map(date => `
+                <tr>
+                    <td>${date}</td>
+                    <td>${dailyData[date].toLocaleString('en-US')}</td>
+                </tr>
+            `).join('');
+
+            // Update current price display
+            document.getElementById('current-price').textContent = ricePrice.toFixed(10);
+            document.getElementById('rice-price').value = ricePrice;
+        }
+
+        // Initialize pre-2024 donations as baseline
+        if (donations.length === 0) {
+            donations.push({
+                date: '2024-01-01',
+                amount: startingSurplus * ricePrice,
+                donor: 'Pre-2024 donations',
+                notes: 'Cumulative surplus from donations prior to 2024'
+            });
+            save();
+        }
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
