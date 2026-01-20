@@ -1,0 +1,65 @@
+═══════════════════════════════════════════════════════
+   HOW TO RUN THE FREERICE TRACKER
+═══════════════════════════════════════════════════════
+
+EASIEST WAY:
+────────────────────────────────────────────────────────
+
+1. Open Terminal (Cmd+Space, type "Terminal")
+
+2. Type these two commands:
+
+   cd ~/projects/freerice_tracker
+   ./start.sh
+
+3. Open your browser to: http://localhost:5000
+
+4. To stop: Press Ctrl+C in the Terminal
+
+
+ALTERNATIVE (if you forget the commands):
+────────────────────────────────────────────────────────
+
+1. Open Terminal
+
+2. Drag the "start.sh" file into the Terminal window
+
+3. Press Enter
+
+4. Open your browser to: http://localhost:5000
+
+
+DAILY DATA FETCHING:
+────────────────────────────────────────────────────────
+
+Option 1 (Manual):
+  - Click "Fetch Latest Data" button on the dashboard
+  - This smartly fetches all missing days from your last entry to yesterday
+  - Perfect if you check weekly/monthly - it fills in all the gaps
+
+Option 2 (Automatic via cron):
+  - Open Terminal and type: crontab -e
+  - Press 'i' to enter insert mode
+  - Add this line:
+    0 8 * * * cd /Users/jordancox/projects/freerice_tracker && /usr/bin/python3 fetch_data.py >> logs/cron.log 2>&1
+  - Press Escape, then type: :wq
+  - Press Enter
+  (This runs every day at 8am and fills in any gaps)
+
+
+TROUBLESHOOTING:
+────────────────────────────────────────────────────────
+
+If you get "python: command not found":
+  Try: python3 app.py instead
+
+If you get "permission denied":
+  Run: chmod +x start.sh
+
+If port 5000 is already in use:
+  Find and kill the process:
+  lsof -ti:5000 | xargs kill
+
+
+THAT'S IT!
+═══════════════════════════════════════════════════════

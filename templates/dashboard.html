@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freerice Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Freerice Donation Tracker</h1>
+
+        <!-- Current Status -->
+        <div class="status-card {% if surplus_grains > 1000000000 %}green{% elif surplus_grains > 500000000 %}yellow{% else %}red{% endif %}">
+            <h2>Current Rice Surplus</h2>
+            <div class="big-number">
+                {{ '{:,.0f}'.format(surplus_grains) }} grains
+            </div>
+            <div class="sub-number">
+                ${{ '{:,.2f}'.format(surplus_usd) }} USD
+                {% if price_per_grain %}
+                    (@ ${{ '{:.10f}'.format(price_per_grain) }}/grain)
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary">
+            <div class="summary-item">
+                <h3>Total Consumed</h3>
+                <p>{{ '{:,.0f}'.format(total_consumed) }} grains</p>
+            </div>
+            <div class="summary-item">
+                <h3>Total Donated</h3>
+                <p>{{ '{:,.0f}'.format(total_donated_grains) }} grains</p>
+                <p class="small">${{ '{:,.2f}'.format(total_donated_usd) }}</p>
+            </div>
+            <div class="summary-item">
+                <h3>Estimated Depletion</h3>
+                {% if days_until_depletion %}
+                    <p>{{ days_until_depletion }} days</p>
+                    <p class="small">{{ depletion_date.strftime('%Y-%m-%d') }}</p>
+                {% else %}
+                    <p>N/A</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts">
+            <div class="chart-container">
+                <h3>Surplus Over Time</h3>
+                <canvas id="surplusChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Daily Consumption (Last 30 Days)</h3>
+                <canvas id="consumptionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Manual Actions -->
+        <div class="actions">
+            <button onclick="fetchLatest()" class="btn">Fetch Latest Data</button>
+        </div>
+
+        <!-- Add Donation Form -->
+        <div class="form-section">
+            <h3>Add Donation</h3>
+            <form action="/api/add-donation" method="POST" class="inline-form">
+                <input type="date" name="date" required>
+                <input type="number" step="0.01" name="amount" placeholder="USD Amount" required>
+                <input type="text" name="donor" placeholder="Donor Name">
+                <input type="text" name="notes" placeholder="Notes">
+                <button type="submit" class="btn">Add</button>
+            </form>
+        </div>
+
+        <!-- Donations Table -->
+        <div class="table-section">
+            <h3>Donations</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount (USD)</th>
+                        <th>Grains</th>
+                        <th>Donor</th>
+                        <th>Notes</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for donation in donations %}
+                    <tr>
+                        <td>{{ donation.date }}</td>
+                        <td>${{ '{:,.2f}'.format(donation.usd_amount) }}</td>
+                        <td>
+                            {% if price_per_grain %}
+                                {{ '{:,.0f}'.format(donation.usd_amount / price_per_grain) }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>{{ donation.donor_name }}</td>
+                        <td>{{ donation.notes }}</td>
+                        <td>
+                            <form action="/api/delete-donation/{{ donation.id }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn-small" onclick="return confirm('Delete this donation?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add Rice Price Form -->
+        <div class="form-section">
+            <h3>Add/Update Rice Price</h3>
+            <form action="/api/add-rice-price" method="POST" class="inline-form">
+                <input type="number" name="year" placeholder="Year" required>
+                <input type="number" step="0.0000000001" name="price" placeholder="Price per grain" required>
+                <input type="text" name="notes" placeholder="Notes (e.g., WFP average)">
+                <button type="submit" class="btn">Add</button>
+            </form>
+        </div>
+
+        <!-- Rice Prices Table -->
+        <div class="table-section">
+            <h3>Rice Prices</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Price per Grain (USD)</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for price in rice_prices %}
+                    <tr>
+                        <td>{{ price.year }}</td>
+                        <td>${{ '{:.10f}'.format(price.price_per_grain_usd) }}</td>
+                        <td>{{ price.notes }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add Manual Rice Entry Form -->
+        <div class="form-section">
+            <h3>Add/Update Daily Rice Entry</h3>
+            <form action="/api/add-manual-rice" method="POST" class="inline-form">
+                <input type="date" name="date" required>
+                <input type="number" name="grains" placeholder="Grains" required>
+                <button type="submit" class="btn">Add</button>
+            </form>
+        </div>
+
+        <!-- Recent Consumption Table -->
+        <div class="table-section">
+            <h3>Recent Daily Consumption</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Grains</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in recent_consumption %}
+                    <tr>
+                        <td>{{ day.date }}</td>
+                        <td>{{ '{:,}'.format(day.grains) }}</td>
+                        <td>{{ day.source }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function fetchLatest() {
+            const response = await fetch('/api/fetch-latest', { method: 'POST' });
+            const result = await response.json();
+            if (result.success) {
+                alert(`Successfully imported ${result.count} day(s) of data!`);
+                location.reload();
+            } else {
+                alert('Already up to date or failed to fetch');
+            }
+        }
+
+        // Load chart data
+        async function loadCharts() {
+            const response = await fetch('/api/chart-data');
+            const data = await response.json();
+
+            // Surplus over time chart
+            const surplusCtx = document.getElementById('surplusChart').getContext('2d');
+            new Chart(surplusCtx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: 'Surplus (grains)',
+                        data: data.map(d => d.surplus),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000000000).toFixed(2) + 'B';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Daily consumption chart (last 30 days)
+            const last30 = data.slice(-30);
+            const consumptionCtx = document.getElementById('consumptionChart').getContext('2d');
+            new Chart(consumptionCtx, {
+                type: 'bar',
+                data: {
+                    labels: last30.map(d => d.date),
+                    datasets: [{
+                        label: 'Daily Consumption (grains)',
+                        data: last30.map(d => d.consumed),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        loadCharts();
+    </script>
+</body>
+</html>

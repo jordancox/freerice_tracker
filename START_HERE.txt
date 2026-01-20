@@ -1,0 +1,11 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  COPY AND PASTE THIS INTO TERMINAL:
+
+    cd ~/projects/freerice_tracker && ./start.sh
+
+  Then open: http://localhost:5000
+
+  (Press Ctrl+C to stop)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
