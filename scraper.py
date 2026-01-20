@@ -8,7 +8,10 @@ STATS_URL = 'https://engine.freerice.com/stats/rice/daily.html'
 def fetch_daily_stats():
     """Fetch the daily rice stats HTML table"""
     try:
-        response = requests.get(STATS_URL, timeout=10)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        response = requests.get(STATS_URL, headers=headers, timeout=10)
         response.raise_for_status()
         return response.text
     except Exception as e:
