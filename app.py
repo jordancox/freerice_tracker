@@ -62,31 +62,6 @@ def fetch_latest():
     count = scraper.fetch_and_import_missing()
     return jsonify({'success': count > 0, 'count': count})
 
-@app.route('/api/import-day', methods=['POST'])
-def import_day():
-    """Import a single day's data (used by GitHub Actions)"""
-    import os
-
-    # Check API token for security
-    token = request.headers.get('X-API-Token')
-    expected_token = os.environ.get('API_TOKEN', 'development-token')
-
-    if token != expected_token:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    data = request.get_json()
-    date = data.get('date')
-    grains = data.get('grains')
-
-    if not date or not grains:
-        return jsonify({'error': 'Missing date or grains'}), 400
-
-    try:
-        database.insert_daily_rice(date, grains, source='github-action')
-        return jsonify({'success': True, 'date': date, 'grains': grains})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/add-donation', methods=['POST'])
 def add_donation():
     """Add a new donation"""

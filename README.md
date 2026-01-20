@@ -1,6 +1,6 @@
 # Freerice Donation Tracker
 
-A simple web dashboard to track rice consumption vs donations for freerice.com.
+A simple local web dashboard to track rice consumption vs donations for freerice.com.
 
 ## Setup
 

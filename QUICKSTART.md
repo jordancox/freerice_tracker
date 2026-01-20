@@ -1,25 +1,25 @@
 # Quick Start Guide
 
-## You're all set up! Here's what's been done:
+## Running the App
 
-1. **Database created** with all 2024 data imported (366 days)
-2. **Starting surplus** set to 7,238,896,492 grains (Jan 1, 2024)
-3. **2023 rice price** configured: $0.0000071042 per grain
-4. **Current surplus**: ~1.84 billion grains (as of Dec 31, 2024)
-
-## Running the Dashboard
-
+**Simple way:**
 ```bash
-python app.py
+cd ~/projects/freerice_tracker
+./start.sh
 ```
 
 Then open: http://localhost:5000
 
-## What you can do:
+**Or manually:**
+```bash
+python app.py
+```
 
-### Daily Updates
-- Click "Fetch Yesterday's Data" button to manually pull the latest day
-- Or set up a cron job (see README.md) to automate it
+## What You Can Do
+
+### Fetch Latest Data
+- Click "Fetch Latest Data" button on the dashboard
+- Automatically imports all missing days up to yesterday
 
 ### Add Donations
 - Use the "Add Donation" form
@@ -27,27 +27,11 @@ Then open: http://localhost:5000
 - System automatically converts to grains based on current rice price
 
 ### Update Rice Prices
-- When you get 2024/2025 WFP prices, add them via "Add/Update Rice Price" form
-- The system always uses the most recent year's price
+- When you get new WFP prices, add them via "Add/Update Rice Price" form
+- The system always uses the most recent year's price for calculations
 
 ### Manual Corrections
 - If daily data is wrong, use "Add/Update Daily Rice Entry" to fix it
-
-## Important Notes
-
-**Current discrepancy**: The system shows 1,843,129,892 grains ending surplus for 2024, but you mentioned 1,873,940,322. The ~30M grain difference might be:
-- Donations from 2024 you need to add
-- Manual adjustments from your spreadsheet
-- Different calculation methods
-
-Once you add any missing 2024 donations, the numbers should align.
-
-## Next Steps
-
-1. Add any 2024 donations you find
-2. Add 2024 rice price when available (currently using 2023 price)
-3. Start fetching 2025 daily data
-4. Set up cron job for automation (when ready)
 
 ## File Structure
 
@@ -56,10 +40,8 @@ freerice_tracker/
 ├── app.py                  # Main Flask app
 ├── database.py             # Database operations
 ├── scraper.py              # Daily data fetcher
-├── import_2024_data.py     # Already run - don't run again
-├── verify.py               # Check calculations anytime
-├── requirements.txt        # Already installed
-├── README.md               # Full documentation
+├── start.sh                # Easy startup script
+├── stop.sh                 # Stop the server
 ├── data/
 │   └── tracker.db          # Your SQLite database
 ├── templates/
@@ -68,12 +50,15 @@ freerice_tracker/
     └── style.css           # Styles
 ```
 
-## Hosting Later
+## Automated Fetching (Optional)
 
-When ready to deploy:
-- Option 1: Simple VPS (DigitalOcean, Linode) - $5-10/month
-- Option 2: PythonAnywhere (free tier available)
-- Option 3: Fly.io (free tier)
-- Option 4: Your domain with a small server
+To automatically fetch data daily, you can set up a cron job:
 
-The entire app is self-contained - just needs Python 3.7+ and can run anywhere.
+```bash
+crontab -e
+```
+
+Add this line to run daily at 8am:
+```
+0 8 * * * cd /Users/jordancox/projects/freerice_tracker && /usr/bin/python3 fetch_data.py >> logs/cron.log 2>&1
+```
