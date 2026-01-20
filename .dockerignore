@@ -1,0 +1,19 @@
+# Don't copy these to Docker image
+data/*.db
+logs/
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.DS_Store
+*.md
+!README.md
+check_*.py
+fix_*.py
+verify.py
+import_2025_data.py
+convert_surplus_to_donation.py
