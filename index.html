@@ -216,7 +216,10 @@
             <h3>Import Rice Data</h3>
             <p class="helper-text">Go to <a href="https://engine.freerice.com/stats/rice/daily.html" target="_blank">https://engine.freerice.com/stats/rice/daily.html</a>, view page source (Cmd+U), copy everything, and paste below:</p>
             <textarea id="html-input" placeholder="Paste the entire HTML here..."></textarea>
-            <button class="btn" onclick="importData()" style="margin-top: 10px;">Import Data</button>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <button class="btn" onclick="importData()">Import Data</button>
+                <button class="btn-small" onclick="clearAllData()" style="background: #95a5a6;">Clear All Data</button>
+            </div>
         </div>
 
         <div class="form-section">
@@ -275,7 +278,6 @@
         let dailyData = JSON.parse(localStorage.getItem('dailyData') || '{}');
         let donations = JSON.parse(localStorage.getItem('donations') || '[]');
         let ricePrice = parseFloat(localStorage.getItem('ricePrice') || '0.0000071042');
-        const startingSurplus = 7238896492; // Jan 1, 2024
 
         function save() {
             localStorage.setItem('dailyData', JSON.stringify(dailyData));
@@ -363,11 +365,18 @@
             render();
         }
 
+        function clearAllData() {
+            if (confirm('This will delete ALL data (rice consumption and donations). Are you sure?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
         function calculateSurplus() {
             const totalConsumed = Object.values(dailyData).reduce((sum, grains) => sum + grains, 0);
             const totalDonatedUsd = donations.reduce((sum, d) => sum + d.amount, 0);
             const totalDonatedGrains = totalDonatedUsd / ricePrice;
-            const surplus = startingSurplus + totalDonatedGrains - totalConsumed;
+            const surplus = totalDonatedGrains - totalConsumed;
 
             return { surplus, totalConsumed, totalDonatedGrains, totalDonatedUsd };
         }
@@ -434,13 +443,13 @@
             document.getElementById('rice-price').value = ricePrice;
         }
 
-        // Initialize pre-2024 donations as baseline
+        // Initialize pre-2024 donations as baseline (7.2B grains @ 2023 price)
         if (donations.length === 0) {
             donations.push({
                 date: '2024-01-01',
-                amount: startingSurplus * ricePrice,
+                amount: 51426.57,
                 donor: 'Pre-2024 donations',
-                notes: 'Cumulative surplus from donations prior to 2024'
+                notes: 'Cumulative surplus from donations prior to 2024 (7,238,896,492 grains)'
             });
             save();
         }
