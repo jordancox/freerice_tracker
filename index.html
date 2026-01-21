@@ -583,39 +583,39 @@
             const sortedDates = Object.keys(dailyData).sort();
             if (sortedDates.length === 0) return;
 
-            // Calculate surplus at intervals
+            // Calculate surplus at monthly intervals for cleaner chart
             const surplusData = [];
-
-            // Get donations sorted by date
             const sortedDonations = [...donations].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // Sample every 7 days to keep chart readable
-            for (let i = 0; i < sortedDates.length; i += 7) {
-                const date = sortedDates[i];
+            // Group by month to reduce noise
+            const monthlyData = {};
+            sortedDates.forEach(date => {
+                const month = date.substring(0, 7); // YYYY-MM
+                if (!monthlyData[month]) {
+                    monthlyData[month] = { dates: [], lastDate: date };
+                }
+                monthlyData[month].dates.push(date);
+                monthlyData[month].lastDate = date; // Keep updating to get last date of month
+            });
 
-                // Calculate total consumed up to this date
+            // Calculate surplus at end of each month
+            Object.keys(monthlyData).sort().forEach(month => {
+                const date = monthlyData[month].lastDate;
+
+                // Total consumed up to this date
                 const consumed = sortedDates
-                    .filter((d, idx) => idx <= i)
+                    .filter(d => d <= date)
                     .reduce((sum, d) => sum + dailyData[d], 0);
 
-                // Calculate total donated up to this date
+                // Total donated up to this date
                 const donated = sortedDonations
-                    .filter(d => new Date(d.date) <= new Date(date))
+                    .filter(d => d.date <= date)
                     .reduce((sum, d) => sum + d.amount, 0) / ricePrice;
 
                 surplusData.push({
                     date,
                     surplus: donated - consumed
                 });
-            }
-
-            // Add final point
-            const lastDate = sortedDates[sortedDates.length - 1];
-            const finalConsumed = Object.values(dailyData).reduce((sum, g) => sum + g, 0);
-            const finalDonated = donations.reduce((sum, d) => sum + d.amount, 0) / ricePrice;
-            surplusData.push({
-                date: lastDate,
-                surplus: finalDonated - finalConsumed
             });
 
             const maxSurplus = Math.max(...surplusData.map(d => d.surplus));
