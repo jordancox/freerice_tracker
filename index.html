@@ -355,17 +355,6 @@
             </div>
         </div>
 
-        <div class="chart-container">
-            <h3 class="chart-title">Surplus Over Time</h3>
-            <div class="line-chart" id="surplus-chart"></div>
-        </div>
-
-        <div class="chart-container">
-            <h3 class="chart-title">Daily Consumption (Last 30 Days)</h3>
-            <div class="bar-chart" id="consumption-chart"></div>
-            <div class="chart-labels" id="consumption-labels"></div>
-        </div>
-
         <div class="form-section">
             <h3>Import Rice Data</h3>
             <p class="helper-text">Go to <a href="https://engine.freerice.com/stats/rice/daily.html" target="_blank">https://engine.freerice.com/stats/rice/daily.html</a>, view page source (Cmd+U), copy everything, and paste below. Only data from 2024-01-01 onwards will be imported.</p>
@@ -544,142 +533,6 @@
             return { surplus, totalConsumed, totalDonatedGrains, totalDonatedUsd };
         }
 
-        function renderConsumptionChart() {
-            const sortedDates = Object.keys(dailyData).sort().slice(-30);
-            if (sortedDates.length === 0) return;
-
-            const chartData = sortedDates.map(date => ({
-                date,
-                grains: dailyData[date]
-            }));
-
-            const maxGrains = Math.max(...chartData.map(d => d.grains));
-
-            // Render bars
-            const chartContainer = document.getElementById('consumption-chart');
-            chartContainer.innerHTML = chartData.map(d => {
-                const heightPercent = (d.grains / maxGrains) * 100;
-                return `
-                    <div class="bar" style="height: ${heightPercent}%">
-                        <div class="bar-tooltip">
-                            ${d.date}<br>
-                            ${d.grains.toLocaleString('en-US')} grains
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Render labels (show first, middle, last)
-            const labelsContainer = document.getElementById('consumption-labels');
-            const firstDate = chartData[0].date;
-            const lastDate = chartData[chartData.length - 1].date;
-            labelsContainer.innerHTML = `
-                <span>${firstDate}</span>
-                <span>${lastDate}</span>
-            `;
-        }
-
-        function renderSurplusChart() {
-            const sortedDates = Object.keys(dailyData).sort();
-            if (sortedDates.length === 0) return;
-
-            // Calculate surplus at monthly intervals for cleaner chart
-            const surplusData = [];
-            const sortedDonations = [...donations].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            // Group by month to reduce noise
-            const monthlyData = {};
-            sortedDates.forEach(date => {
-                const month = date.substring(0, 7); // YYYY-MM
-                if (!monthlyData[month]) {
-                    monthlyData[month] = { dates: [], lastDate: date };
-                }
-                monthlyData[month].dates.push(date);
-                monthlyData[month].lastDate = date; // Keep updating to get last date of month
-            });
-
-            // Calculate surplus at end of each month
-            Object.keys(monthlyData).sort().forEach(month => {
-                const date = monthlyData[month].lastDate;
-
-                // Total consumed up to this date
-                const consumed = sortedDates
-                    .filter(d => d <= date)
-                    .reduce((sum, d) => sum + dailyData[d], 0);
-
-                // Total donated up to this date
-                const donated = sortedDonations
-                    .filter(d => d.date <= date)
-                    .reduce((sum, d) => sum + d.amount, 0) / ricePrice;
-
-                surplusData.push({
-                    date,
-                    surplus: donated - consumed
-                });
-            });
-
-            const maxSurplus = Math.max(...surplusData.map(d => d.surplus));
-            const minSurplus = Math.min(...surplusData.map(d => d.surplus));
-            const range = maxSurplus - minSurplus;
-
-            const chartContainer = document.getElementById('surplus-chart');
-            chartContainer.style.paddingLeft = '80px'; // Space for labels
-
-            // Create grid lines
-            const gridHtml = `
-                <div class="line-chart-grid">
-                    <div class="grid-line"><span class="grid-label">${(maxSurplus / 1e9).toFixed(1)}B grains</span></div>
-                    <div class="grid-line"><span class="grid-label">${((maxSurplus + minSurplus) / 2 / 1e9).toFixed(1)}B grains</span></div>
-                    <div class="grid-line"><span class="grid-label">${(minSurplus / 1e9).toFixed(1)}B grains</span></div>
-                </div>
-            `;
-
-            // Create SVG line
-            const svgPoints = surplusData.map((d, i) => {
-                const x = (i / (surplusData.length - 1)) * 100;
-                const y = 100 - ((d.surplus - minSurplus) / range) * 100;
-                return `${x},${y}`;
-            }).join(' ');
-
-            const svgHtml = `
-                <svg class="line-chart-svg" preserveAspectRatio="none" viewBox="0 0 100 100">
-                    <polyline
-                        fill="none"
-                        stroke="#3498db"
-                        stroke-width="0.5"
-                        points="${svgPoints}"
-                    />
-                    <polyline
-                        fill="rgba(52, 152, 219, 0.1)"
-                        stroke="none"
-                        points="${svgPoints} 100,100 0,100"
-                    />
-                </svg>
-            `;
-
-            // Create points
-            const pointsHtml = surplusData.map((d, i) => {
-                const x = (i / (surplusData.length - 1)) * 100;
-                const y = 100 - ((d.surplus - minSurplus) / range) * 100;
-                return `
-                    <div class="line-point" style="left: ${x}%; bottom: ${y}%">
-                        <div class="bar-tooltip">
-                            ${d.date}<br>
-                            ${(d.surplus / 1e9).toFixed(2)}B grains
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            chartContainer.innerHTML = `
-                ${gridHtml}
-                <div class="line-chart-content">
-                    ${svgHtml}
-                    ${pointsHtml}
-                </div>
-            `;
-        }
-
         function render() {
             const { surplus, totalConsumed, totalDonatedGrains, totalDonatedUsd } = calculateSurplus();
 
@@ -740,10 +593,6 @@
             // Update current price display
             document.getElementById('current-price').textContent = ricePrice.toFixed(10);
             document.getElementById('rice-price').value = ricePrice;
-
-            // Render charts
-            renderConsumptionChart();
-            renderSurplusChart();
         }
 
         // Initialize pre-2024 donations as baseline (7.2B grains @ 2023 price)
