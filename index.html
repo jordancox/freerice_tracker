@@ -214,7 +214,7 @@
 
         <div class="form-section">
             <h3>Import Rice Data</h3>
-            <p class="helper-text">Go to <a href="https://engine.freerice.com/stats/rice/daily.html" target="_blank">https://engine.freerice.com/stats/rice/daily.html</a>, view page source (Cmd+U), copy everything, and paste below:</p>
+            <p class="helper-text">Go to <a href="https://engine.freerice.com/stats/rice/daily.html" target="_blank">https://engine.freerice.com/stats/rice/daily.html</a>, view page source (Cmd+U), copy everything, and paste below. Only data from 2024-01-01 onwards will be imported.</p>
             <textarea id="html-input" placeholder="Paste the entire HTML here..."></textarea>
             <div style="margin-top: 10px; display: flex; gap: 10px;">
                 <button class="btn" onclick="importData()">Import Data</button>
@@ -303,6 +303,10 @@
 
             const rows = table.querySelectorAll('tr');
             let imported = 0;
+            let skipped = 0;
+
+            // Only import data from 2024-01-01 onwards (our baseline date)
+            const baselineDate = new Date('2024-01-01');
 
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].querySelectorAll('td');
@@ -311,8 +315,13 @@
                     const grains = parseInt(cols[1].textContent.trim());
 
                     if (date && !isNaN(grains)) {
-                        dailyData[date] = grains;
-                        imported++;
+                        const entryDate = new Date(date);
+                        if (entryDate >= baselineDate) {
+                            dailyData[date] = grains;
+                            imported++;
+                        } else {
+                            skipped++;
+                        }
                     }
                 }
             }
@@ -320,7 +329,7 @@
             save();
             render();
             document.getElementById('html-input').value = '';
-            alert(`Imported ${imported} days of data`);
+            alert(`Imported ${imported} days of data (skipped ${skipped} days before 2024-01-01)`);
         }
 
         function addDonation() {
